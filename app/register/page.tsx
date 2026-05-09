@@ -27,7 +27,7 @@ export default function RegisterPage() {
     }
 
     const supabase = createClient()
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -36,9 +36,20 @@ export default function RegisterPage() {
     })
 
     if (error) {
-      setError(error.message)
+      if (error.message.toLowerCase().includes('rate limit') || error.message.toLowerCase().includes('email rate')) {
+        setError('Email rate limit reached. Please wait a few minutes and try again.')
+      } else if (error.message.toLowerCase().includes('already registered') || error.message.toLowerCase().includes('already exists')) {
+        setError('An account with this email already exists. Please sign in instead.')
+      } else {
+        setError(error.message)
+      }
       setLoading(false)
+    } else if (data.session) {
+      // Email confirmation is disabled — user is logged in immediately
+      router.push('/dashboard')
+      router.refresh()
     } else {
+      // Email confirmation is required
       setSuccess(true)
       setTimeout(() => router.push('/login'), 3000)
     }
